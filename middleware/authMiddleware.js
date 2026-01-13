@@ -17,14 +17,32 @@ export async function authenticate(req, res, next) {
   }
 }
 
-export const verifyToken=(req, res, next)=>{
- const token = req.cookies.token;
-    if (!token) return res.status(401).json({ status:401,message: "No token" });
+export const verifyToken = (req, res, next) => {
   try {
+    // ✅ Read token from Authorization header
+    const authHeader =
+      req.headers.authorization || req.headers.Authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: 401,
+        message: "No token",
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    // ✅ Verify JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+
+    // ⚠️ Your token payload uses `id`
+    req.user = { id: decoded.id };
+
     next();
-  } catch {
-    res.status(401).json({ status:401,message: "Invalid token" });
+  } catch (error) {
+    return res.status(401).json({
+      status: 401,
+      message: "Invalid token",
+    });
   }
-}
+};
