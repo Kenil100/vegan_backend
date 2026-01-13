@@ -49,7 +49,7 @@ export const sendOtp = async (req, res) => {
 
     await sendSms(phone, `Your OTP is ${code}. It expires in ${OTP_EXPIRE / 60} minutes.`);
 
-    return res.status(200).json({ status: 200, message: "OTP sent successfully",data:code });
+    return res.status(200).json({ status: 200, message: "OTP sent successfully", data: code });
   } catch (err) {
     return res.status(500).json({ status: 500, message: "Internal server error" });
   }
@@ -208,12 +208,55 @@ export const logoutUser = (req, res) => {
   res.status(200).json({ status: 200, message: "Logged out" });
 };
 
+// export const getUserData = async (req, res) => {
+//   const token = req.cookies.token; if (!token) return res.json({ status: 401, message: "No token" });
+//   const userId = req.user.id;
+//   const user = await User.findById({ _id: userId });
+//   res.status(200).json({ status: 200, user, token })
+// }
+
 export const getUserData = async (req, res) => {
-  const token = req.cookies.token; if (!token) return res.json({ status: 401, message: "No token" });
-  const userId = req.user.id;
-  const user = await User.findById({ _id: userId });
-  res.status(200).json({ status: 200, user, token })
-}
+  try {
+    // 1️⃣ Read token from Authorization header
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        status: 401,
+        message: "No token",
+      });
+    }
+
+    // 2️⃣ Extract token
+    const token = authHeader.split(" ")[1];
+
+    // 3️⃣ Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // ⚠️ YOUR TOKEN PAYLOAD USES `id`
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({
+        status: 401,
+        message: "User not found",
+      });
+    }
+
+    // 4️⃣ RETURN SAME RESPONSE YOU WANT
+    return res.status(200).json({
+      status: 200,
+      user,
+      token, // ✅ INCLUDED
+    });
+  } catch (error) {
+    return res.status(401).json({
+      status: 401,
+      message: "Invalid token",
+    });
+  }
+};
+
 
 export const getAllCardDetails = async (req, res) => {
   try {
@@ -258,7 +301,7 @@ export const addCardDetail = async (req, res) => {
     if (existingCard) {
       return res.status(400).json({ status: 400, message: "Card already exists, please try another" });
     }
-    const newCard = await Card.create({ userId, cardHolderName, last4Digits, expiryDate, expiryMonth, expiryYear, cvvCode});
+    const newCard = await Card.create({ userId, cardHolderName, last4Digits, expiryDate, expiryMonth, expiryYear, cvvCode });
     return res.status(201).json({ status: 201, message: "Card details saved successfully", data: newCard });
   } catch (error) {
     return res.status(500).json({ status: 500, message: "Internal server error" });
@@ -274,7 +317,7 @@ export const updateCardDetails = async (req, res) => {
       return res.status(400).json({ status: 400, message: "Invalid card number" });
     }
     const last4Digits = cardNumber.slice(-4);
-    const updateCard = await Card.findByIdAndUpdate(cardId, { userId, cardHolderName, last4Digits,expiryDate, expiryMonth, expiryYear,cvvCode}, { new: true });
+    const updateCard = await Card.findByIdAndUpdate(cardId, { userId, cardHolderName, last4Digits, expiryDate, expiryMonth, expiryYear, cvvCode }, { new: true });
 
     return res.status(200).json({ status: 200, message: "Card details updated successfully", data: updateCard });
   } catch (error) {
