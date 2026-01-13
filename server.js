@@ -1,7 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import bodyParser from "body-parser";
 import authRoutes from "./routes/auth.js";
 import addressRoutes from "./routes/address.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -11,33 +10,23 @@ import blogRoutes from "./routes/blogRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
-import cookieParser from "cookie-parser";
-import {connectDB} from './config/db.js';
+import { connectDB } from './config/db.js';
 
 dotenv.config();
 connectDB();
+
 const app = express();
 
-app.use(cookieParser());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://vegevo.netlify.app"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-
-const corsOptions = {
-  origin: [
-    "http://localhost:5173",
-    "https://vegevo.netlify.app"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-app.use(cors(corsOptions));
-
-// ✅ VERY IMPORTANT: allow preflight
-app.options("*", cors(corsOptions));
-
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/blog", blogRoutes);
 app.use("/api/auth", authRoutes);
